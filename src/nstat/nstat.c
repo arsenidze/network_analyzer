@@ -24,7 +24,7 @@ int	nstat_init(t_nstat **nstat_ptr)
 	avltree_init(&(*nstat_ptr)->ip_storage, cmp_ip_fn, 0);
 	(*nstat_ptr)->num_ips = 0;
 
-	status = nstat_load_stat_from_file(*nstat_ptr, STATE_FILE_NAME);
+	status = nstat_load_stat_from_file(*nstat_ptr, STAT_FILE_NAME);
 	return (status);
 }
 

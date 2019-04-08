@@ -4,6 +4,7 @@
 #include <pcap.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 void    sniffer_init(t_sniffer *sniffer)
 {
@@ -69,9 +70,9 @@ int    sniffer_start(t_sniffer *sniffer)
     int status;
     // syslog(LOG_DEBUG, "%s", "Sniffer start");
     printf("%s", "Sniffer start");
-    status = pcap_loop(sniffer->handle, 10, _packet_handler, (u_char *)sniffer);
+    status = pcap_loop(sniffer->handle[sniffer->interface_idx], 10, _packet_handler, (u_char *)sniffer);
     if (status != 0) {
-        printf("%s\n", pcap_geterr(sniffer->handle));
+        printf("%s\n", pcap_geterr(sniffer->handle[sniffer->interface_idx]));
         return (-1);
     }
     nstat_print(sniffer->nstat);
