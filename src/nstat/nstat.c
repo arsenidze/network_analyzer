@@ -13,7 +13,7 @@ int cmp_ip_fn(const struct avltree_node *a, const struct avltree_node *b)
 	return (strcmp(p->ip_addr, q->ip_addr));
 }
 
-int	nstat_init(t_nstat **nstat_ptr)
+int	nstat_init(t_nstat **nstat_ptr, char *file_name)
 {
 	int	status;
 
@@ -23,8 +23,11 @@ int	nstat_init(t_nstat **nstat_ptr)
 	}
 	avltree_init(&(*nstat_ptr)->ip_storage, cmp_ip_fn, 0);
 	(*nstat_ptr)->num_ips = 0;
-
-	status = nstat_load_stat_from_file(*nstat_ptr, STAT_FILE_NAME);
+	status = 0;
+	if (file_name != NULL) {
+		status = nstat_load_stat_from_file(*nstat_ptr, file_name);
+		nstat_print(*nstat_ptr);
+	}
 	return (status);
 }
 
@@ -179,7 +182,7 @@ int	nstat_load_stat_from_file(t_nstat *nstat, char *file_name)
 		return (-1);
 	}
 
-	fscanf(fp, "%u", &nstat->num_ips);
+	fscanf(fp, "%u\n", &nstat->num_ips);
 
 	stat_size = nstat->num_ips * (MAX_NUM_CHARS_FOR_IP_RECORD + 1);
 
