@@ -15,13 +15,17 @@ int cmp_ip_fn(const struct avltree_node *a, const struct avltree_node *b)
 
 int	nstat_init(t_nstat **nstat_ptr)
 {
+	int	status;
+
 	*nstat_ptr = malloc(sizeof(t_nstat));
 	if (*nstat_ptr == NULL) {
 		return (-1);
 	}
 	avltree_init(&(*nstat_ptr)->ip_storage, cmp_ip_fn, 0);
 	(*nstat_ptr)->num_ips = 0;
-	return (0);
+
+	status = nstat_load_stat_from_file(*nstat_ptr, STATE_FILE_NAME);
+	return (status);
 }
 
 int	nstat_add_ip(t_nstat *nstat, char *ip_addr, t_ip_add_type type)
@@ -157,6 +161,11 @@ void	_str_to_storage_node(char *str, t_storage_node *storage_node)
 	storage_node->upcoming_times = strtoul(str + offset, &endptr, 10);
 }
 
+/*
+**	Suppose that file is correct
+**	ip record format:	255.255.255.255 {incoming_times} {upcoming_times}\n
+*/
+
 int	nstat_load_stat_from_file(t_nstat *nstat, char *file_name)
 {
 	FILE			*fp;
@@ -197,6 +206,7 @@ int	nstat_load_stat_from_file(t_nstat *nstat, char *file_name)
 		_str_to_storage_node(&stat_in_str[offset], &storage_nodes[i]);
 		offset += MAX_NUM_CHARS_FOR_IP_RECORD;
 		avltree_insert(&storage_nodes[i].node, &nstat->ip_storage);
+		offset += 1;
 	}
 
 	free(stat_in_str);

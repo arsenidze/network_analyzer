@@ -48,10 +48,11 @@ void    sniffer_init(t_sniffer *sniffer)
         exit(EXIT_FAILURE);
     }
 
-    strncpy(sniffer->dev, dev, MAX_DEV_NAME - 1);
-    sniffer->handle = handle;
-
-    pcap_freealldevs(alldevsp);
+    sniffer->interface_idx = 0;
+    sniffer->alldevsp = alldevsp;
+    sniffer->dev[sniffer->interface_idx] = dev;
+    sniffer->handle[sniffer->interface_idx] = handle;
+    sniffer->num_active_interfaces = 1;
 
     nstat_init(&sniffer->nstat);
     // syslog(LOG_DEBUG, "%s", "Sniffer is ready");
@@ -74,7 +75,7 @@ int    sniffer_start(t_sniffer *sniffer)
         return (-1);
     }
     nstat_print(sniffer->nstat);
-    nstat_save_stat_to_file(sniffer->nstat, "stat.txt");
+    nstat_save_stat_to_file(sniffer->nstat, STAT_FILE_NAME);
 
     // syslog(LOG_DEBUG, "%s", "Sniffer end");
     printf("%s", "Sniffer end");
@@ -83,7 +84,10 @@ int    sniffer_start(t_sniffer *sniffer)
 
 void    sniffer_free(t_sniffer *sniffer)
 {
-    pcap_close(sniffer->handle);
+    for (int i = 0; i < sniffer->num_active_interfaces; ++i) {
+        pcap_close(sniffer->handle[i]);
+    }
+    pcap_freealldevs(sniffer->alldevsp);
     nstat_free(sniffer->nstat);
 }
 
@@ -122,24 +126,28 @@ void    _packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_
     printf("To: %s\n", ip_addr);
     nstat_add_ip(sniffer->nstat, ip_addr, UPCOMING_IP);
 
-    /* determine protocol */    
-    // switch(ip->ip_p) {
-    //     case IPPROTO_TCP:
-    //         printf("   Protocol: TCP\n");
-    //         break;
-    //     case IPPROTO_UDP:
-    //         printf("   Protocol: UDP\n");
-    //         return;
-    //     case IPPROTO_ICMP:
-    //         printf("   Protocol: ICMP\n");
-    //         return;
-    //     case IPPROTO_IP:
-    //         printf("   Protocol: IP\n");
-    //         return;
-    //     default:
-    //         printf("   Protocol: unknown\n");
-    //         return;
-    // }
-
     return ;
+}
+
+char            **sniffer_get_avaliable_interfaces(t_sniffer *sniffer)
+{
+    char    **interfaces_names;
+    int     i;
+
+    interfaces_names = malloc(sizeof(char *) * (MAX_NUM_INTERFACES + 1));
+    if (interfaces_names == NULL) {
+        syslog(LOG_ERR, strerror(ernno));
+        return (NULL);
+    }
+    i = 0;
+    for(pcap_if_t *d = sniffer->alldevsp; d != NULL; d = d->next) {
+        for(pcap_addr_t *a = d->addresses; a != NULL; a = a->next) {
+            if(a->addr->sa_family == AF_INET) {
+                interfaces_names[i++] = d->name;
+                break ;
+            }
+        }
+    }
+    interfaces_names[i] = NULL;
+    return (interfaces_names);
 }

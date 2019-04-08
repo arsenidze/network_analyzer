@@ -1,6 +1,8 @@
 #ifndef NSTAT_H
 #define NSTAT_H
 
+#define STAT_FILE_NAME "stat.txt"
+
 typedef struct s_nstat	t_nstat;
 
 typedef enum	e_ip_add_type
