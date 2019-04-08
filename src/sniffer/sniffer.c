@@ -137,7 +137,7 @@ char            **sniffer_get_avaliable_interfaces(t_sniffer *sniffer)
 
     interfaces_names = malloc(sizeof(char *) * (MAX_NUM_INTERFACES + 1));
     if (interfaces_names == NULL) {
-        syslog(LOG_ERR, strerror(ernno));
+        syslog(LOG_ERR, "%s", strerror(errno));
         return (NULL);
     }
     i = 0;
