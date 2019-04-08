@@ -14,6 +14,7 @@ SRC_FULL_PATH =\
 	src/daemon/daemon.c\
 	src/sniffer/sniffer.c\
 	src/avltree/avl.c\
+	src/ipc/ipc.c\
 	src/main.c\
 
 
@@ -26,9 +27,12 @@ INC_DIRS =\
 	src/daemon\
 	src/nstat\
 	src/sniffer\
+	src/ipc\
+
+INC = $(foreach inc_dir, $(INC_DIRS), $(addsuffix /*.h, $(wildcard $(inc_dir))))
 
 CFLAGS = -g
-IFLAGS = $(foreach inc, $(INC_DIRS), $(addprefix -I, $(wildcard $(inc))))
+IFLAGS = $(foreach inc_dir, $(INC_DIRS), $(addprefix -I, $(wildcard $(inc_dir))))
 LFLAGS = -lpcap
 
 all:
@@ -37,7 +41,7 @@ all:
 $(NAME): $(OBJ)
 	$(LD) $(OBJ) $(LFLAGS) -o $(NAME)
 
-$(OBJ_DIR)/%.o: %.c
+$(OBJ_DIR)/%.o: %.c $(INC)
 	$(CC) $(CFLAGS) $(IFLAGS) -c $< -o $@
 
 $(OBJ): | $(OBJ_DIR)
@@ -75,5 +79,6 @@ vpath %.c $(SRC_DIR)/avltree
 vpath %.c $(SRC_DIR)/daemon
 vpath %.c $(SRC_DIR)/nstat
 vpath %.c $(SRC_DIR)/sniffer
+vpath %.c $(SRC_DIR)/ipc
 
 .PHONY: all clean fclean re depend test
