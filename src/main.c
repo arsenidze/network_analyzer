@@ -16,7 +16,7 @@ int		main(int argc, char *argv[])
 	openlog(argv[0], LOG_CONS, LOG_USER);
     syslog(LOG_INFO, "%s start", argv[0]);
 
-	daemon_start();
+	// daemon_start();
 	sniffer_init(&sniffer);
     cli_handler_init(&cli_handler, &sniffer);
 
@@ -27,7 +27,7 @@ int		main(int argc, char *argv[])
     		sniffer_sniff(&sniffer);
     	}
     	else {
-	    	printf("Sniffer stoped\n");
+	    	syslog(LOG_DEBUG, "Sniffer stoped");
 	    	sleep(2);
     	}
     }

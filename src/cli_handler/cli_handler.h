@@ -11,6 +11,7 @@ typedef struct	s_cli_handler
 	pthread_t	*thread_id;
 	t_sniffer	*sniffer;
 	t_ipc		*ipc;
+	int			is_active;
 }				t_cli_handler;
 
 int	cli_handler_init(t_cli_handler *cli_handler, t_sniffer *sniffer);

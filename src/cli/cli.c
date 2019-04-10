@@ -4,6 +4,9 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <stdlib.h>
+#include <unistd.h>
+
 #define	MAX_NWORDS 3
 
 typedef struct	s_command
@@ -97,7 +100,11 @@ int	cli_start(int argc, char *argv[])
 	int		status;
 	int		size;
 
-	ipc_client_init(&ipc);
+	status = ipc_client_init(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
 	strcpy(ipc.send_buf, "start");
 	status = ipc_send_size_and_msg(&ipc);
 	if (status < 0) {
@@ -120,7 +127,11 @@ int	cli_stop(int argc, char *argv[])
 	int		status;
 	int		size;
 
-	ipc_client_init(&ipc);
+	status = ipc_client_init(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
 	strcpy(ipc.send_buf, "stop");
 	status = ipc_send_size_and_msg(&ipc);
 	if (status < 0) {
@@ -176,13 +187,17 @@ int	cli_show_ip_count(int argc, char *argv[])
 	t_ipc			ipc;
 	int				status;
 	int				size;
-	unsigned int	ip_count;
 
 	status = _check_ip_prototype(argv[2]);
 	if (status < 0) {
 		fprintf(stderr, "Error: Wrong ip format\n");
 	}
-	ipc_client_init(&ipc);
+	status = ipc_client_init(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+
 	strcpy(ipc.send_buf, "show_ip_count");
 	status = ipc_send_size_and_msg(&ipc);
 	if (status < 0) {
@@ -211,8 +226,15 @@ int	cli_select_iface(int argc, char *argv[])
 	int		status;
 	int		size;
 
-	ipc_client_init(&ipc);
+	(void)argc;
+	(void)argv;
+	status = ipc_client_init(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
 	strcpy(ipc.send_buf, "select_iface");
+	printf("%s\n", ipc.send_buf);
 	status = ipc_send_size_and_msg(&ipc);
 	if (status < 0) {
 		fprintf(stderr, "Problem with command\n");

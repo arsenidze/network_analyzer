@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <syslog.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
@@ -47,24 +48,35 @@ static void	*_handle_cli_requests(void *arg)
 	t_ipc			ipc;
 	int				size;
 	int				request_idx;
+	int				status;
 
 	cli_handler = (t_cli_handler *)arg;
-	ipc_server_init(&ipc);
+	printf("hello\n");
+	while (1) {
+		status = ipc_server_init(&ipc);
+		if (status < 0) {
+			sleep(3);
+			printf("hello\n");
+		}
+		else {
+			break ;
+		}
+	}
 	cli_handler->ipc = &ipc;
-	while (1)
+	while (cli_handler->is_active)
 	{
 		ipc.client_sd = accept(ipc.server_sd, (struct sockaddr *)NULL, NULL);
 		if (ipc.client_sd == -1) {
-			printf("%s\n", strerror(errno));
+			syslog(LOG_ERR, "%s\n", strerror(errno));
 			continue ;
 		}
-		printf("I have catched connection\n");
+		syslog(LOG_DEBUG, "I have catched connection\n");
 		
 		size = ipc_recv_size_and_msg(&ipc);
 		if (size < 0) {
 			continue ;
 		}
-		printf("I have recevied: %s\n", ipc.recv_buf);
+		syslog(LOG_DEBUG, "I have recevied: %s\n", ipc.recv_buf);
 
 		request_idx = _find_request_prototype(ipc.recv_buf);
 		if (request_idx < 0) {
@@ -74,7 +86,6 @@ static void	*_handle_cli_requests(void *arg)
 		else {
 			requests[request_idx].process(cli_handler);
 		}
-
 		close(ipc.client_sd);
 	}
 	ipc_free(&ipc);
@@ -86,9 +97,10 @@ int cli_handler_start(t_cli_handler *cli_handler)
 	pthread_t	thread_id;
 	int			status;
 
+	cli_handler->is_active = 1;
 	status = pthread_create(&thread_id, NULL, _handle_cli_requests, cli_handler);
 	if (status != 0) {
-		fprintf(stderr, "Problem with creating cli handler\n");
+		syslog(LOG_ERR, "Problem with creating cli handler\n");
 		return (-1);
 	}
 	cli_handler->thread_id = &thread_id;
@@ -97,8 +109,8 @@ int cli_handler_start(t_cli_handler *cli_handler)
 
 int	_cli_handler_free(t_cli_handler *cli_handler)
 {
-	(void)cli_handler;
-	// pthread_join(_handle->thread_id);
+	cli_handler->is_active = 0;
+	pthread_join(*(cli_handler->thread_id), NULL);
 	return (0);
 }
 
@@ -109,7 +121,6 @@ int	_handle_start(t_cli_handler *cli_handler)
 		ipc_send_size_and_msg(cli_handler->ipc);
 	}
 	else {
-		// sniffer_start(cli_handler->sniffer);
 		cli_handler->sniffer->is_active = 1;
 		strcpy(cli_handler->ipc->send_buf, "Sniffer was started");
 		ipc_send_size_and_msg(cli_handler->ipc);
@@ -124,7 +135,6 @@ int	_handle_stop(t_cli_handler *cli_handler)
 		ipc_send_size_and_msg(cli_handler->ipc);
 	}
 	else {
-		// sniffer_start(cli_handler->sniffer);
 		cli_handler->sniffer->is_active = 0;
 		strcpy(cli_handler->ipc->send_buf, "Sniffer was stoped");
 		ipc_send_size_and_msg(cli_handler->ipc);

@@ -141,7 +141,7 @@ int	nstat_save_stat_to_file(t_nstat *nstat, char *file_name)
 		offset += MAX_NUM_CHARS_FOR_IP_RECORD;
 		stat_in_str[offset++] = '\n';
 	}
-	printf("%s\n", stat_in_str);
+	// printf("%s\n", stat_in_str);
 	fwrite(stat_in_str, offset, sizeof(char), fp);
 	free(stat_in_str);
 	fclose(fp);
