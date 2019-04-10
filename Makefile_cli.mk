@@ -1,6 +1,6 @@
-MAKE_NAME = Makefile
+MAKE_NAME = Makefile_cli.make
 
-NAME = na
+NAME = na_cli
 
 CC     = gcc
 LD     = $(CC)
@@ -10,12 +10,9 @@ SRC_DIR = ./src
 OBJ_DIR = ./obj
 
 SRC_FULL_PATH =\
-	src/nstat/nstat.c\
-	src/daemon/daemon.c\
-	src/sniffer/sniffer.c\
-	src/avltree/avl.c\
+	src/cli/cli.c\
 	src/ipc/ipc.c\
-	src/main.c\
+	src/main_cli.c\
 
 
 SRC = $(notdir $(SRC_FULL_PATH))
@@ -23,10 +20,7 @@ SRC = $(notdir $(SRC_FULL_PATH))
 OBJ = $(addprefix $(OBJ_DIR)/, $(SRC:.c=.o))
 
 INC_DIRS =\
-	src/avltree\
-	src/daemon\
-	src/nstat\
-	src/sniffer\
+	src/cli\
 	src/ipc\
 
 INC = $(foreach inc_dir, $(INC_DIRS), $(addsuffix /*.h, $(wildcard $(inc_dir))))
@@ -35,8 +29,7 @@ CFLAGS = -g
 IFLAGS = $(foreach inc_dir, $(INC_DIRS), $(addprefix -I, $(wildcard $(inc_dir))))
 LFLAGS = -lpcap -pthread
 
-all:
-	make $(NAME)
+all: $(NAME)
 
 $(NAME): $(OBJ)
 	$(LD) $(OBJ) $(LFLAGS) -o $(NAME)
@@ -54,7 +47,7 @@ clean:
 
 fclean: clean
 	$(RM) $(NAME)
-	$(RM) -r $(OBJ_DIR)
+# 	$(RM) -r $(OBJ_DIR)
 
 re: fclean all
 
@@ -70,14 +63,8 @@ depend:
 	@rm __tmp_makedepend_out__.bak
 	@echo "*** make depend ***"
 
-cli:
-	make -f Makefile_cli.mk
-
 vpath %.c $(SRC_DIR)
-vpath %.c $(SRC_DIR)/avltree
-vpath %.c $(SRC_DIR)/daemon
-vpath %.c $(SRC_DIR)/nstat
-vpath %.c $(SRC_DIR)/sniffer
+vpath %.c $(SRC_DIR)/cli
 vpath %.c $(SRC_DIR)/ipc
 
 .PHONY: all clean fclean re depend test

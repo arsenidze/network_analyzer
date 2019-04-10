@@ -18,36 +18,57 @@ void    sniffer_init(t_sniffer *sniffer)
 
     status = pcap_findalldevs(&alldevsp, errbuf);
     if (status != 0) {
-        syslog(LOG_ERR, "%s", errbuf);
-        // printf("%s", errbuf);
+        // syslog(LOG_ERR, "%s", errbuf);
+        printf("%s", errbuf);
         exit(EXIT_FAILURE);
     }
 
     if (alldevsp == NULL) {
-        syslog(LOG_DEBUG, "%s", "No availiable devices\n");
-        // printf("%s", "No availiable devices\n");
+        // syslog(LOG_DEBUG, "%s", "No availiable devices\n");
+        printf("%s", "No availiable devices\n");
         exit(EXIT_SUCCESS);
     }
     dev = alldevsp->name;
 
-    syslog(LOG_DEBUG, "dev name: %s", dev);
-    // printf("dev name: %s", dev);
+    // syslog(LOG_DEBUG, "dev name: %s", dev);
+    printf("dev name: %s", dev);
     handle = pcap_create(dev, errbuf);
     if (handle == NULL) {
-        syslog(LOG_ERR, "%s", errbuf);
-        // printf("%s", errbuf);
+        // syslog(LOG_ERR, "%s", errbuf);
+        printf("%s", errbuf);
         exit(EXIT_FAILURE);
     }
 
-    pcap_set_rfmon(handle, 1);
-    pcap_set_promisc(handle, 1); /* Capture packets that are not yours */
-    pcap_set_snaplen(handle, SNAP_LEN); /* Snapshot length */
-    pcap_set_timeout(handle, PACKET_TIMEOUT); /* Timeout in milliseconds */
+    status = pcap_set_rfmon(handle, 1);
+    if (status != 0) {
+        printf("%s", pcap_geterr(handle));
+        exit(EXIT_FAILURE);
+    }
+    status = pcap_set_promisc(handle, 1); /* Capture packets that are not yours */
+    if (status != 0) {
+        printf("%s", pcap_geterr(handle));
+        exit(EXIT_FAILURE);
+    }
+    status = pcap_set_snaplen(handle, SNAP_LEN); /* Snapshot length */
+    if (status != 0) {
+        printf("%s", pcap_geterr(handle));
+        exit(EXIT_FAILURE);
+    }
+    status = pcap_set_timeout(handle, PACKET_TIMEOUT); /* Timeout in milliseconds */
+    if (status != 0) {
+        printf("%s", pcap_geterr(handle));
+        exit(EXIT_FAILURE);
+    }
     status = pcap_activate(handle);
     if (status != 0) {
         printf("%s", pcap_geterr(handle));
         exit(EXIT_FAILURE);
     }
+    status = pcap_setnonblock(handle, 1, errbuf);
+    if (status != 0) {
+        printf("%s", errbuf);
+        exit(EXIT_FAILURE);
+    }    
 
     sniffer->interface_idx = 0;
     sniffer->alldevsp = alldevsp;
@@ -56,8 +77,8 @@ void    sniffer_init(t_sniffer *sniffer)
     sniffer->num_active_interfaces = 1;
 
     nstat_init(&sniffer->nstat, STAT_FILE_NAME);
-    syslog(LOG_DEBUG, "%s", "Sniffer is ready");
-    // printf("%s", "Sniffer is ready");
+    // syslog(LOG_DEBUG, "%s", "Sniffer is ready");
+    printf("%s", "Sniffer is ready");
 
     // int link_type;
     // link_type = pcap_datalink(handle);
@@ -68,8 +89,8 @@ void    sniffer_init(t_sniffer *sniffer)
 int    sniffer_start(t_sniffer *sniffer)
 {
     int status;
-    syslog(LOG_DEBUG, "%s", "Sniffer start");
-    // printf("%s", "Sniffer start");
+    // syslog(LOG_DEBUG, "%s", "Sniffer start");
+    printf("%s", "Sniffer start");
     status = pcap_loop(sniffer->handle[sniffer->interface_idx], -1, _packet_handler, (u_char *)sniffer);
     if (status != 0) {
         printf("%s\n", pcap_geterr(sniffer->handle[sniffer->interface_idx]));
@@ -77,8 +98,8 @@ int    sniffer_start(t_sniffer *sniffer)
     }
     nstat_print(sniffer->nstat);
     nstat_save_stat_to_file(sniffer->nstat, STAT_FILE_NAME);
-    syslog(LOG_DEBUG, "%s", "Sniffer end");
-    // printf("%s", "Sniffer end");
+    // syslog(LOG_DEBUG, "%s", "Sniffer end");
+    printf("%s", "Sniffer end");
     return (0);
 }
 
@@ -103,27 +124,27 @@ void    _packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_
     sniffer = (t_sniffer *)args;
 
     count++;
-    syslog(LOG_INFO, "Packet number %d:\n", count);
-    // printf("Packet number %d:\n", count);
+    // syslog(LOG_INFO, "Packet number %d:\n", count);
+    printf("Packet number %d:\n", count);
     
     ethernet = (struct sniff_ethernet *)(packet);
     
     ip = (struct sniff_ip *)(packet + SIZE_ETHERNET);
     size_ip = IP_HL(ip)*4;
     if (size_ip < 20) {
-        syslog(LOG_ERR, "Invalid IP header length: %u bytes\n", size_ip);
-        // printf("Invalid IP header length: %u bytes\n", size_ip);
+        // syslog(LOG_ERR, "Invalid IP header length: %u bytes\n", size_ip);
+        printf("Invalid IP header length: %u bytes\n", size_ip);
         return ;
     }
 
     ip_addr = inet_ntoa(ip->ip_src);
-    syslog(LOG_INFO, "From: %s\n", ip_addr);
-    // printf("From: %s\n", ip_addr);
+    // syslog(LOG_INFO, "From: %s\n", ip_addr);
+    printf("From: %s\n", ip_addr);
     nstat_add_ip(sniffer->nstat, ip_addr, INCOMING_IP);
 
     ip_addr = inet_ntoa(ip->ip_dst);
-    syslog(LOG_INFO, "To: %s\n", ip_addr);
-    // printf("To: %s\n", ip_addr);
+    // syslog(LOG_INFO, "To: %s\n", ip_addr);
+    printf("To: %s\n", ip_addr);
     nstat_add_ip(sniffer->nstat, ip_addr, UPCOMING_IP);
     if (count != 0 && count % 10 == 0) {
         nstat_save_stat_to_file(sniffer->nstat, STAT_FILE_NAME);
@@ -132,14 +153,14 @@ void    _packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_
     return ;
 }
 
-char            **sniffer_get_avaliable_interfaces(t_sniffer *sniffer)
+char    **sniffer_get_avaliable_interfaces(t_sniffer *sniffer)
 {
     char    **interfaces_names;
     int     i;
 
     interfaces_names = malloc(sizeof(char *) * (MAX_NUM_INTERFACES + 1));
     if (interfaces_names == NULL) {
-        syslog(LOG_ERR, "%s", strerror(errno));
+        // syslog(LOG_ERR, "%s", strerror(errno));
         printf("%s", strerror(errno));
         return (NULL);
     }
@@ -154,4 +175,44 @@ char            **sniffer_get_avaliable_interfaces(t_sniffer *sniffer)
     }
     interfaces_names[i] = NULL;
     return (interfaces_names);
+}
+
+int     sniffer_try_capture_packets(t_sniffer *sniffer)
+{
+    int             pcap_fd;
+    fd_set          rfds;
+    struct timeval  tv;
+    int             ret;
+    int             npackets;
+
+    pcap_fd = pcap_get_selectable_fd(sniffer->handle[sniffer->interface_idx]);
+    if (pcap_fd < 0) {
+        printf("%s\n", strerror(errno));
+        return (-1);
+    }
+
+    FD_ZERO(&rfds);
+    FD_SET(pcap_fd, &rfds);
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+
+    ret = select(pcap_fd + 1, &rfds, NULL, NULL, &tv);
+    if (ret > 0 && FD_ISSET(pcap_fd, &rfds)) {
+        npackets = pcap_dispatch(sniffer->handle[sniffer->interface_idx], -1, _packet_handler, (u_char *)sniffer);
+        if (npackets < 0) {
+            printf("%s\n", strerror(errno));
+            return (-1);
+        }
+        else {
+            printf("Nothing to receive (or error)\n");
+            return (-1);
+        }
+    }
+    else if (ret < 0) {
+        printf("%s\n", strerror(errno));
+        return (-1);
+    }
+    else {
+        return (0);
+    }
 }

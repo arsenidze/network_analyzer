@@ -26,7 +26,6 @@ int	nstat_init(t_nstat **nstat_ptr, char *file_name)
 	status = 0;
 	if (file_name != NULL) {
 		status = nstat_load_stat_from_file(*nstat_ptr, file_name);
-		nstat_print(*nstat_ptr);
 	}
 	return (status);
 }

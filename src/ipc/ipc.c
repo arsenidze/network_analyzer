@@ -1,92 +1,90 @@
 #include "ipc.h"
-#include <sys/stat.h>
+// #include <sys/stat.h>
+// #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <unistd.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 
 int	ipc_server_init(t_ipc *ipc)
 {
-	int		status;
-	int		client_to_server;
-	int		server_to_client;
+	int					server_sd;
+	struct sockaddr_in	*connection_info;
 
-	status = mkfifo(FIFO_SERVER, 0666);
-	if (status < 0) {
-		printf("%s\n", strerror(errno));
-		return (-1);
-	}
-	status = mkfifo(FIFO_CLIENT, 0666);
-	if (status < 0) {
+	connection_info = &ipc->connection_info;
+
+	server_sd = socket(PF_INET, SOCK_STREAM, 0);
+	if (server_sd == -1) {
 		printf("%s\n", strerror(errno));
 		return (-1);
 	}
 
-	client_to_server = open(FIFO_SERVER, O_RDONLY);
-	if (client_to_server < 0) {
-		printf("%s\n", strerror(errno));
-		return (-1);
-	}
-	server_to_client = open(FIFO_CLIENT, O_WRONLY);
-	if (server_to_client < 0) {
+	connection_info->sin_family = AF_INET;
+	connection_info->sin_port = htons(IPC_PORT);
+	connection_info->sin_addr.s_addr = inet_addr(IPC_IP_ADDR);
+
+	if (bind(server_sd, (const struct sockaddr *)connection_info, sizeof(struct sockaddr_in)) == -1) {
 		printf("%s\n", strerror(errno));
 		return (-1);
 	}
 
-	ipc->client_to_server = client_to_server;
-	ipc->server_to_client = server_to_client;
+	if (listen(server_sd, 1) == -1) {
+		printf("%s\n", strerror(errno));
+		return (-1);
+	}
+
+	ipc->server_sd = server_sd;
 	ipc->is_server = 1;
 	return (0);
 }
 
 int	ipc_client_init(t_ipc *ipc)
 {
-	int		client_to_server;
-	int		server_to_client;
+	int					client_sd;
+	struct sockaddr_in	*connection_info;
 
-	client_to_server = open(FIFO_SERVER, O_WRONLY);
-	if (client_to_server < 0) {
-		printf("%s\n", strerror(errno));
-		return (-1);
-	}
-	server_to_client = open(FIFO_CLIENT, O_RDONLY);
-	if (server_to_client < 0) {
+	connection_info = &ipc->connection_info;
+
+	client_sd = socket(PF_INET, SOCK_STREAM, 0);
+	if (client_sd == -1) {
 		printf("%s\n", strerror(errno));
 		return (-1);
 	}
 
-	ipc->client_to_server = client_to_server;
-	ipc->server_to_client = server_to_client;
+	connection_info->sin_family = AF_INET;
+	connection_info->sin_port = htons(IPC_PORT);
+	connection_info->sin_addr.s_addr = inet_addr(IPC_IP_ADDR);
+
+	if (connect(client_sd, (const struct sockaddr *)connection_info, sizeof(struct sockaddr_in)) == -1) {
+		printf("%s\n", strerror(errno));
+		return (-1);
+	}
+
+	ipc->client_sd = client_sd;
 	ipc->is_server = 0;
 	return (0);
 }
 
 
-int	ipc_server_free(t_ipc *ipc)
+int	ipc_free(t_ipc *ipc)
 {
-	close(ipc->client_to_server);
-	close(ipc->server_to_client);
-
-	unlink(FIFO_CLIENT);
-	unlink(FIFO_SERVER);
-	return (0);
-}
-
-int	ipc_client_free(t_ipc *ipc)
-{
-	close(ipc->client_to_server);
-	close(ipc->server_to_client);
+	if (ipc->is_server) {
+		close(ipc->server_sd);
+	}
+	else {
+		close(ipc->client_sd);
+	}
 	return (0);
 }
 
 int ipc_recv(t_ipc *ipc)
 {
-	int	from;
 	int nread;
 
-	from = ipc->is_server ? ipc->client_to_server : ipc->server_to_client;
-	nread = read(from, ipc->recv_buf, sizeof(ipc->recv_buf));
+	nread = recv(ipc->client_sd, ipc->recv_buf, sizeof(ipc->recv_buf) - 1, 0);
 	if (nread < 0) {
 		printf("%s\n", strerror(errno));
 		return (-1);
@@ -97,14 +95,44 @@ int ipc_recv(t_ipc *ipc)
 
 int	ipc_send(t_ipc *ipc)
 {
-	int	where;
 	int	status;
 
-	where = ipc->is_server ? ipc->server_to_client : ipc->client_to_server;
-	status = write(where, ipc->send_buf, strlen(ipc->send_buf));
-	if (status < 0) {
+	status = send(ipc->client_sd, ipc->send_buf, strlen(ipc->send_buf), 0);
+	if (status == -1) {
 		printf("%s\n", strerror(errno));
 		return (-1);
 	}
 	return (0);
 }
+
+// int ipc_try_recv(t_ipc *ipc)
+// {
+// 	int 			nread;
+// 	fd_set			rfds;
+//     struct timeval	tv;
+//     int 			ret;
+
+//     FD_ZERO(&rfds);
+//     FD_SET(ipc->from, &rfds);
+//     tv.tv_sec = 5;
+//     tv.tv_usec = 0;
+
+//     ret = select(ipc->from + 1, &rfds, NULL, NULL, &tv);
+//     printf("ret: %d\n", ret);
+//     if (ret > 0 && FD_ISSET(ipc->from, &rfds)) {
+// 		nread = read(ipc->from, ipc->recv_buf, sizeof(ipc->recv_buf));
+// 		if (nread < 0) {
+// 			printf("%s\n", strerror(errno));
+// 			return (-1);
+// 		}
+// 		ipc->recv_buf[nread] = '\0';
+// 		return (nread);
+//     }
+//     else if (ret < 0) {
+//     	printf("%s\n", strerror(errno));
+//         return (-1);
+//     }
+//     else {
+//     	return (0);
+//     }
+// }

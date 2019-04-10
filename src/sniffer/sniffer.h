@@ -20,5 +20,6 @@ void			sniffer_init(t_sniffer *sniffer);
 int				sniffer_start(t_sniffer *sniffer);
 void			sniffer_free(t_sniffer *sniffer);
 char			**sniffer_get_avaliable_interfaces(t_sniffer *sniffer);
+int     		sniffer_try_capture_packets(t_sniffer *sniffer);
 
 #endif
