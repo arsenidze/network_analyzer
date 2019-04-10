@@ -14,12 +14,15 @@ typedef struct	s_sniffer
 	char		*dev[MAX_NUM_INTERFACES];
 	int			interface_idx;
 	int			num_active_interfaces;
+	int			is_active;
 }				t_sniffer;
 
 void			sniffer_init(t_sniffer *sniffer);
-int				sniffer_start(t_sniffer *sniffer);
+// int				sniffer_start(t_sniffer *sniffer);
+// int				sniffer_stop(t_sniffer *sniffer);
+int				sniffer_sniff(t_sniffer *sniffer);
 void			sniffer_free(t_sniffer *sniffer);
 char			**sniffer_get_avaliable_interfaces(t_sniffer *sniffer);
-int     		sniffer_try_capture_packets(t_sniffer *sniffer);
+// int     		sniffer_try_capture_packets(t_sniffer *sniffer);
 
 #endif

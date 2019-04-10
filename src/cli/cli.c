@@ -2,6 +2,7 @@
 #include "ipc.h"
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #define	MAX_NWORDS 3
 
@@ -80,13 +81,13 @@ int	cli_handle_command(int argc, char *argv[])
 
 	command_idx = _find_command_prototype(argc, argv);
 	if (command_idx < 0) {
-		printf("Command doesn't match for any prototype\n");
+		fprintf(stderr, "Command doesn't match to any prototype\n");
 		return (-1);
 	}
 
 	status = _execute_command(argc, argv, command_idx);
 	if (status < 0) {
-		printf("Failed to execute command\n");
+		fprintf(stderr, "Failed to execute command\n");
 	}
 	return (status);
 }
@@ -95,61 +96,193 @@ int	cli_start(int argc, char *argv[])
 {
 	t_ipc	ipc;
 	int		status;
+	int		size;
 
 	ipc_client_init(&ipc);
 	strcpy(ipc.send_buf, "start");
 	status = ipc_send(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+	size = ipc_recv(&ipc);
+	if (size < 0) {
+		fprintf(stderr, "Problem with start sniffing\n");
+		return (-1);
+	}
+	printf("%s\n", ipc.recv_buf);
 	ipc_free(&ipc);
-	return (status);
+	return (0);
 }
 
 int	cli_stop(int argc, char *argv[])
 {
 	t_ipc	ipc;
 	int		status;
+	int		size;
 
 	ipc_client_init(&ipc);
 	strcpy(ipc.send_buf, "stop");
 	status = ipc_send(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}	
+	size = ipc_recv(&ipc);
+	if (size < 0) {
+		fprintf(stderr, "Problem with stop sniffing\n");
+		return (-1);
+	}
+	printf("%s\n", ipc.recv_buf);
+	ipc_free(&ipc);
+	return (0);
+}
+
+static int	_check_ip_prototype(char *str)
+{
+	int	offset;
+	int	i;
+
+	offset = 0;
+	for (int j = 0; j < 3; ++j)
+	{
+		for (i = 0; i < 3 && str[offset + i] != '.'; ++i)
+		{
+			if (!isdigit(str[offset + i])) {
+				return (-1);
+			}
+		}
+		if (i == 0) {
+			return (-1);
+		}
+		if (str[offset + i] != '.') {
+			return (-1);
+		}
+		offset += i + 1;
+	}
+	for (i = 0; i < 3 && str[offset + i] != '\0'; ++i)
+	{
+		if (!isdigit(str[offset + i])) {
+			return (-1);
+		}
+	}
+	if (str[offset + i] != '\0') {
+		return (-1);
+	}
+	return (0);
+}
+int	cli_show_ip_count(int argc, char *argv[])
+{
+	t_ipc			ipc;
+	int				status;
+	int				size;
+	unsigned int	ip_count;
+
+	status = _check_ip_prototype(argv[2]);
+	if (status < 0) {
+		fprintf(stderr, "Error: Wrong ip format\n");
+	}
+	ipc_client_init(&ipc);
+	strcpy(ipc.send_buf, "show_ip_count");
+	status = ipc_send(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+	strcpy(ipc.send_buf, argv[2]);
+	status = ipc_send(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+	size = ipc_recv(&ipc); 
+	if (size < 0 || size != sizeof(unsigned int)) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+	ip_count = *(unsigned int *)ipc.recv_buf;
+	printf("IP: %s | count: %u\n", ipc.send_buf, ip_count);
 	ipc_free(&ipc);
 	return (status);
 }
 
-int	cli_show_ip_count(int argc, char *argv[])
-{
-	return (0);
-	// t_ipc			ipc;
-	// int				status;
-	// unsigned int	ip_count;
-
-	// _check_ip_prototype
-	// ipc_client_init(&ipc);
-	// strcpy(ipc->send_buf, "show_ip_count");
-	// status = ipc_send(&ipc);
-	// if (status < 0) {
-	// 	;
-	// }
-	// size = ipc_recv(&ipc); 
-	// if (size < 0) {
-	// 	return (-1);
-	// }
-	// ip_count = *(unsigned int *)ipc->recv_buf;
-	// printf("%u\n", ip_count);
-	// ipc_free(&ipc);
-	// return (status);
-}
-
 int	cli_show_ifaces(int argc, char *argv[])
 {
-return (0);
+	// t_ipc	ipc;
+	// int		status;
+	// int		size;
+
+	// ipc_client_init(&ipc);
+	// strcpy(ipc.send_buf, "show_ifaces");
+	// status = ipc_send(&ipc);
+	// if (status < 0) {
+	// 	fprintf(stderr, "Problem with command\n");
+	// 	return (-1);
+	// }	
+	// size = ipc_recv(&ipc);
+	// if (size < 0) {
+	// 	fprintf(stderr, "Problem with stop sniffing\n");
+	// 	return (-1);
+	// }
+	// printf("%s\n", ipc->recv_buf);
+	// ipc_free(&ipc);
+	return (0);
 }
 
 int	cli_select_iface(int argc, char *argv[])
 {
-return (0);
+	t_ipc	ipc;
+	int		status;
+	int		size;
+
+	ipc_client_init(&ipc);
+	strcpy(ipc.send_buf, "select_iface");
+	status = ipc_send(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+	strcpy(ipc.send_buf, argv[3]);
+	status = ipc_send(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+	size = ipc_recv(&ipc);
+	if (size < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+	printf("%s\n", ipc.recv_buf);
+	ipc_free(&ipc);
+	return (0);
 }
 
 int	cli_stat_iface(int argc, char *argv[])
 {
-return (0);
+	// t_ipc	ipc;
+	// int		status;
+	// int		size;
+
+	// ipc_client_init(&ipc);
+	// strcpy(ipc.send_buf, "select_iface");
+	// status = ipc_send(&ipc);
+	// if (status < 0) {
+	// 	fprintf(stderr, "Problem with command\n");
+	// 	return (-1);
+	// }
+	// strcpy(ipc.send_buf, argv[3]);
+	// status = ipc_send(&ipc);
+	// if (status < 0) {
+	// 	fprintf(stderr, "Problem with command\n");
+	// 	return (-1);
+	// }
+	// size = ipc_recv(&ipc);
+	// if (size < 0) {
+	// 	fprintf(stderr, "Problem with command\n");
+	// 	return (-1);
+	// }
+	// printf("%s\n", ipc->recv_buf);
+	// ipc_free(&ipc);
+	return (0);	
 }

@@ -42,7 +42,6 @@ int	nstat_add_ip(t_nstat *nstat, char *ip_addr, t_ip_add_type type)
 	}
 	memset(storage_node, 0, sizeof(t_storage_node));
 
-	// strncpy(node.ip_addr, ip_addr, IP_LEN);
 	strcpy(storage_node->ip_addr, ip_addr);
 	if (type == INCOMING_IP) {
 		storage_node->incoming_times++;
@@ -69,7 +68,7 @@ int	nstat_add_ip(t_nstat *nstat, char *ip_addr, t_ip_add_type type)
 	else {
 		nstat->num_ips++;
 	}
-	return (0);
+	return (ret == NULL ? 1 : 0);
 }
 
 void	_copy_and_fill_reminder(char *dst_buf, char *src_str, char fill_char, int fill_len)

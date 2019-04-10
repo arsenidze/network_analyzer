@@ -15,6 +15,7 @@ SRC_FULL_PATH =\
 	src/sniffer/sniffer.c\
 	src/avltree/avl.c\
 	src/ipc/ipc.c\
+	src/cli_handler.c\
 	src/main.c\
 
 
@@ -27,6 +28,7 @@ INC_DIRS =\
 	src/daemon\
 	src/nstat\
 	src/sniffer\
+	src/cli_handler\
 	src/ipc\
 
 INC = $(foreach inc_dir, $(INC_DIRS), $(addsuffix /*.h, $(wildcard $(inc_dir))))
@@ -79,5 +81,6 @@ vpath %.c $(SRC_DIR)/daemon
 vpath %.c $(SRC_DIR)/nstat
 vpath %.c $(SRC_DIR)/sniffer
 vpath %.c $(SRC_DIR)/ipc
+vpath %.c $(SRC_DIR)/cli_handler
 
 .PHONY: all clean fclean re depend test
