@@ -6,3 +6,8 @@ To compile and run, just do:
 
   : $ make
   : $ sudo ./na
+
+* Run cli
+
+  : $ make cli
+  : $ ./na_cli

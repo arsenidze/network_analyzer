@@ -14,7 +14,7 @@ int		main(int argc, char *argv[])
 	t_cli_handler	cli_handler;
 
 	openlog(argv[0], LOG_CONS, LOG_USER);
-    // syslog(LOG_INFO, "%s start", argv[0]);
+    syslog(LOG_INFO, "%s start", argv[0]);
 
 	daemon_start();
 	sniffer_init(&sniffer);
@@ -35,7 +35,7 @@ int		main(int argc, char *argv[])
     cli_handler_free(&cli_handler);
 	sniffer_free(&sniffer);
 
-	// syslog(LOG_INFO, "%s end", argv[0]);
+	syslog(LOG_INFO, "%s end", argv[0]);
 	closelog();
 	return (0);
 }
