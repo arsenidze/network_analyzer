@@ -4,7 +4,7 @@
 #include <pcap.h>
 #include "nstat.h"
 
-#define MAX_NUM_INTERFACES	10
+#define MAX_NUM_INTERFACES	30
 
 typedef struct	s_sniffer
 {
@@ -18,11 +18,9 @@ typedef struct	s_sniffer
 }				t_sniffer;
 
 void			sniffer_init(t_sniffer *sniffer);
-// int				sniffer_start(t_sniffer *sniffer);
-// int				sniffer_stop(t_sniffer *sniffer);
 int				sniffer_sniff(t_sniffer *sniffer);
 void			sniffer_free(t_sniffer *sniffer);
 char			**sniffer_get_avaliable_interfaces(t_sniffer *sniffer);
-// int     		sniffer_try_capture_packets(t_sniffer *sniffer);
+int				sniffer_try_set_interface(t_sniffer *sniffer, char *interface, char *errbuf);
 
 #endif

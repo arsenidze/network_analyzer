@@ -8,31 +8,6 @@
 #include <unistd.h>
 #include <pthread.h>
 
-// void	*handle_commands(void *arg)
-// {
-// 	t_ipc	*ipc;
-// 	int		nread;
-
-// 	ipc = (t_ipc *)arg;
-// 	while (1)
-// 	{
-// 		ipc->client_sd = accept(ipc->server_sd, (struct sockaddr *)NULL, NULL);
-// 		if (ipc->client_sd == -1) {
-// 			printf("%s\n", strerror(errno));
-// 			continue ;
-// 		}
-// 		printf("I have catched connection\n");
-
-// 		nread = ipc_recv(ipc);
-// 		if (nread < 0) {
-// 			continue ;
-// 		}
-// 		printf("I have recevied: %s\n", ipc->recv_buf);
-// 		close(ipc->client_sd);
-// 	}
-// 	return (NULL);
-// }
-
 int		main(int argc, char *argv[])
 {
 	t_sniffer		sniffer;
@@ -40,10 +15,8 @@ int		main(int argc, char *argv[])
 
 	openlog(argv[0], LOG_CONS, LOG_USER);
     // syslog(LOG_INFO, "%s start", argv[0]);
-    printf("%s start\n", argv[0]);
 
-	// daemon_start();
-    printf("test0\n");
+	daemon_start();
 	sniffer_init(&sniffer);
     cli_handler_init(&cli_handler, &sniffer);
 
@@ -63,7 +36,6 @@ int		main(int argc, char *argv[])
 	sniffer_free(&sniffer);
 
 	// syslog(LOG_INFO, "%s end", argv[0]);
-	printf("%s end\n", argv[0]);
 	closelog();
 	return (0);
 }

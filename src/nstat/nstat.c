@@ -229,3 +229,25 @@ void nstat_print(t_nstat *nstat)
 		printf("%s %u %u\n", storage_node->ip_addr, storage_node->incoming_times, storage_node->upcoming_times);
 	}
 }
+
+int		nstat_lookup_ip_times(t_nstat *nstat, char *ip_addr, unsigned int times[2])
+{
+	t_storage_node		key;
+	struct avltree_node	*find;
+	t_storage_node		*find_storage_node;
+
+	strcpy(key.ip_addr, ip_addr);
+	find = avltree_lookup(&key.node, &nstat->ip_storage);
+	if (find == NULL) {
+		times[0] = 0;
+		times[1] = 0;
+		return (0);
+	}
+	else
+	{
+		find_storage_node = avltree_container_of(find, t_storage_node, node);
+		times[0] = find_storage_node->incoming_times;
+		times[1] = find_storage_node->upcoming_times;
+		return (1);
+	}
+}

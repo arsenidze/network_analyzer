@@ -64,12 +64,6 @@ void    sniffer_init(t_sniffer *sniffer)
         printf("%s", pcap_geterr(handle));
         exit(EXIT_FAILURE);
     }
-    status = pcap_setnonblock(handle, 1, errbuf);
-    if (status != 0) {
-        printf("%s", errbuf);
-        exit(EXIT_FAILURE);
-    }    
-
     sniffer->interface_idx = 0;
     sniffer->alldevsp = alldevsp;
     sniffer->dev[sniffer->interface_idx] = dev;
@@ -114,22 +108,8 @@ int    sniffer_sniff(t_sniffer *sniffer)
         return (-1);
     }
     _packet_handler((u_char *)sniffer, header, packet);
-    // sniffer->is_active = 1;
-    // while (sniffer->is_active) {
-    //     ret = pcap_next_ex(handle, &header, &packet);
-    //     if (ret <= 0) {
-    //         continue ;
-    //     }
-    //     _packet_handler((u_char *)sniffer, &header, &packet);
-    // }
     return (0);
 }
-
-// int    sniffer_stop(t_sniffer *sniffer)
-// {
-//     sniffer->is_active = 0;
-//     return (0);
-// }
 
 void    sniffer_free(t_sniffer *sniffer)
 {
@@ -229,42 +209,64 @@ char    **sniffer_get_avaliable_interfaces(t_sniffer *sniffer)
     return (interfaces_names);
 }
 
-// int     sniffer_try_capture_packets(t_sniffer *sniffer)
-// {
-//     int             pcap_fd;
-//     fd_set          rfds;
-//     struct timeval  tv;
-//     int             ret;
-//     int             npackets;
+int             sniffer_try_set_interface(t_sniffer *sniffer, char *interface, char *errbuf)
+{
+    pcap_if_t   *d;
+    pcap_t      *handle;
+    int         status;
 
-//     pcap_fd = pcap_get_selectable_fd(sniffer->handle[sniffer->interface_idx]);
-//     if (pcap_fd < 0) {
-//         printf("%s\n", strerror(errno));
-//         return (-1);
-//     }
+    for (int i = 0; i < sniffer->num_active_interfaces; ++i)
+    {
+        if (strcmp(d->name, sniffer->dev[i]) == 0) {
+            sniffer->interface_idx = i;
+            return (0);
+        }
+    }
 
-//     FD_ZERO(&rfds);
-//     FD_SET(pcap_fd, &rfds);
-//     tv.tv_sec = 0;
-//     tv.tv_usec = 0;
+    for(d = sniffer->alldevsp; d != NULL; d = d->next) {
+        if (strcmp(d->name, interface) == 0) {
+            break ;
+        }
+    }
+    if (d == NULL) {
+        strcpy(errbuf, "No such interface");
+        return (-1);
+    }
 
-//     ret = select(pcap_fd + 1, &rfds, NULL, NULL, &tv);
-//     if (ret > 0 && FD_ISSET(pcap_fd, &rfds)) {
-//         npackets = pcap_dispatch(sniffer->handle[sniffer->interface_idx], -1, _packet_handler, (u_char *)sniffer);
-//         if (npackets < 0) {
-//             printf("%s\n", strerror(errno));
-//             return (-1);
-//         }
-//         else {
-//             printf("Nothing to receive (or error)\n");
-//             return (-1);
-//         }
-//     }
-//     else if (ret < 0) {
-//         printf("%s\n", strerror(errno));
-//         return (-1);
-//     }
-//     else {
-//         return (0);
-//     }
-// }
+    handle = pcap_create(d->name, errbuf);
+    if (handle == NULL) {
+        // syslog(LOG_ERR, "%s", errbuf);
+        return (-1);
+    }
+
+    status = pcap_set_rfmon(handle, 1);
+    if (status != 0) {
+        strcpy(errbuf, pcap_geterr(handle));
+    }
+    status = pcap_set_promisc(handle, 1); /* Capture packets that are not yours */
+    if (status != 0) {
+        strcpy(errbuf, pcap_geterr(handle));
+    }
+    status = pcap_set_snaplen(handle, SNAP_LEN); /* Snapshot length */
+    if (status != 0) {
+        strcpy(errbuf, pcap_geterr(handle));
+        return (-1);
+    }
+    status = pcap_set_timeout(handle, PACKET_TIMEOUT); /* Timeout in milliseconds */
+    if (status != 0) {
+        strcpy(errbuf, pcap_geterr(handle));
+        return (-1);
+    }
+    status = pcap_activate(handle);
+    if (status != 0) {
+        strcpy(errbuf, pcap_geterr(handle));
+        return (-1);
+    }
+
+    sniffer->num_active_interfaces++;
+    sniffer->interface_idx++;
+    sniffer->handle[sniffer->interface_idx] = handle;
+    sniffer->dev[sniffer->interface_idx] = d->name;
+
+    return (0);
+}

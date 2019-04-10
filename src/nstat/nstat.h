@@ -17,5 +17,6 @@ int		nstat_save_stat_to_file(t_nstat *nstat, char *file_name);
 int		nstat_load_stat_from_file(t_nstat *nstat, char *file_name);
 int		nstat_free(t_nstat *nstat);
 void	nstat_print(t_nstat *nstat);
+int		nstat_lookup_ip_times(t_nstat *nstat, char *ip_addr, unsigned int times[2]);
 
 #endif

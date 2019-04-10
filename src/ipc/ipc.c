@@ -105,34 +105,41 @@ int	ipc_send(t_ipc *ipc)
 	return (0);
 }
 
-// int ipc_try_recv(t_ipc *ipc)
-// {
-// 	int 			nread;
-// 	fd_set			rfds;
-//     struct timeval	tv;
-//     int 			ret;
+int	ipc_recv_size_and_msg(t_ipc *ipc)
+{
+	int 			nread;
+	unsigned int	size;
 
-//     FD_ZERO(&rfds);
-//     FD_SET(ipc->from, &rfds);
-//     tv.tv_sec = 5;
-//     tv.tv_usec = 0;
+	nread = recv(ipc->client_sd, (void *)&size, sizeof(size), 0);
+	if (nread < 0 || nread != sizeof(size)) {
+		printf("%s\n", strerror(errno));
+		return (-1);
+	}
+	nread = recv(ipc->client_sd, ipc->recv_buf, size, 0);
+	if (nread < 0) {
+		printf("%s\n", strerror(errno));
+		return (-1);
+	}
+	ipc->recv_buf[nread] = '\0';
+	return (nread);	
+}
 
-//     ret = select(ipc->from + 1, &rfds, NULL, NULL, &tv);
-//     printf("ret: %d\n", ret);
-//     if (ret > 0 && FD_ISSET(ipc->from, &rfds)) {
-// 		nread = read(ipc->from, ipc->recv_buf, sizeof(ipc->recv_buf));
-// 		if (nread < 0) {
-// 			printf("%s\n", strerror(errno));
-// 			return (-1);
-// 		}
-// 		ipc->recv_buf[nread] = '\0';
-// 		return (nread);
-//     }
-//     else if (ret < 0) {
-//     	printf("%s\n", strerror(errno));
-//         return (-1);
-//     }
-//     else {
-//     	return (0);
-//     }
-// }
+int	ipc_send_size_and_msg(t_ipc *ipc)
+{
+	int				status;
+	unsigned int	len;
+
+	len = strlen(ipc->send_buf);
+	status = send((ipc->client_sd), (void *)&len, sizeof(len), 0);
+	if (status == -1) {
+		printf("%s\n", strerror(errno));
+		return (-1);
+	}
+
+	status = send(ipc->client_sd, ipc->send_buf, len, 0);
+	if (status == -1) {
+		printf("%s\n", strerror(errno));
+		return (-1);
+	}
+	return (0);	
+}

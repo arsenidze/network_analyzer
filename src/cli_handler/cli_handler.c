@@ -2,6 +2,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <ctype.h>
 #include "cli_handler.h"
 #include "ipc.h"
 #include "sniffer.h"
@@ -19,7 +20,6 @@ static t_request	requests[NREQUESTS] = {
 	{"start", _handle_start},
 	{"stop", _handle_stop},
 	{"show_ip_count", _handle_show_ip_count},
-	{"show_ifaces", _handle_show_ifaces},
 	{"select_iface", _handle_select_iface},
 	{"stat_iface", _handle_stat_iface}
 };
@@ -60,7 +60,7 @@ static void	*_handle_cli_requests(void *arg)
 		}
 		printf("I have catched connection\n");
 		
-		size = ipc_recv(&ipc);
+		size = ipc_recv_size_and_msg(&ipc);
 		if (size < 0) {
 			continue ;
 		}
@@ -69,7 +69,7 @@ static void	*_handle_cli_requests(void *arg)
 		request_idx = _find_request_prototype(ipc.recv_buf);
 		if (request_idx < 0) {
 			strcpy(ipc.send_buf, "Unknown command");
-			ipc_send(&ipc);
+			ipc_send_size_and_msg(&ipc);
 		}
 		else {
 			requests[request_idx].process(cli_handler);
@@ -106,13 +106,13 @@ int	_handle_start(t_cli_handler *cli_handler)
 {
 	if (cli_handler->sniffer->is_active) {
 		strcpy(cli_handler->ipc->send_buf, "Sniffer already started");
-		ipc_send(cli_handler->ipc);
+		ipc_send_size_and_msg(cli_handler->ipc);
 	}
 	else {
 		// sniffer_start(cli_handler->sniffer);
 		cli_handler->sniffer->is_active = 1;
 		strcpy(cli_handler->ipc->send_buf, "Sniffer was started");
-		ipc_send(cli_handler->ipc);
+		ipc_send_size_and_msg(cli_handler->ipc);
 	}
 	return (0);
 }
@@ -121,30 +121,106 @@ int	_handle_stop(t_cli_handler *cli_handler)
 {
 	if (!cli_handler->sniffer->is_active) {
 		strcpy(cli_handler->ipc->send_buf, "Sniffer already stoped");
-		ipc_send(cli_handler->ipc);
+		ipc_send_size_and_msg(cli_handler->ipc);
 	}
 	else {
 		// sniffer_start(cli_handler->sniffer);
 		cli_handler->sniffer->is_active = 0;
 		strcpy(cli_handler->ipc->send_buf, "Sniffer was stoped");
-		ipc_send(cli_handler->ipc);
+		ipc_send_size_and_msg(cli_handler->ipc);
 	}
 	return (0);
 }
 
-int	_handle_show_ip_count(t_cli_handler *cli_handler)
+static int	_check_ip_prototype(char *str)
 {
+	int	offset;
+	int	i;
+
+	offset = 0;
+	for (int j = 0; j < 3; ++j)
+	{
+		for (i = 0; i < 3 && str[offset + i] != '.'; ++i)
+		{
+			if (!isdigit(str[offset + i])) {
+				return (-1);
+			}
+		}
+		if (i == 0) {
+			return (-1);
+		}
+		if (str[offset + i] != '.') {
+			return (-1);
+		}
+		offset += i + 1;
+	}
+	for (i = 0; i < 3 && str[offset + i] != '\0'; ++i)
+	{
+		if (!isdigit(str[offset + i])) {
+			return (-1);
+		}
+	}
+	if (str[offset + i] != '\0') {
+		return (-1);
+	}
 	return (0);
 }
 
-int	_handle_show_ifaces(t_cli_handler *cli_handler)
+#define MIN_IP_LEN	7
+#define MAX_IP_LEN	15
+
+int	_handle_show_ip_count(t_cli_handler *cli_handler)
 {
+	int				size;
+	int				status;
+	unsigned int	times[2];
+
+	size = ipc_recv_size_and_msg(cli_handler->ipc);
+	if (size < MIN_IP_LEN || size > MAX_IP_LEN) {
+		strcpy(cli_handler->ipc->send_buf, "Error: Wrong ip format");
+		ipc_send_size_and_msg(cli_handler->ipc);
+		return (-1);
+	}
+	status = _check_ip_prototype(cli_handler->ipc->recv_buf);
+	if (status < 0) {
+		strcpy(cli_handler->ipc->send_buf, "Error: Wrong ip format");
+		ipc_send_size_and_msg(cli_handler->ipc);
+		return (-1);
+	}
+
+	nstat_lookup_ip_times(cli_handler->sniffer->nstat, 
+		cli_handler->ipc->recv_buf, times);
+	
+	sprintf(cli_handler->ipc->send_buf, "%u", times[0]);
+	ipc_send_size_and_msg(cli_handler->ipc);
 	return (0);
 }
+
+#define MAX_ERROR_LEN 256
 
 int	_handle_select_iface(t_cli_handler *cli_handler)
 {
-	return (0);
+	int				size;
+	int				status;
+	char			errbuf[MAX_ERROR_LEN];
+
+	size = ipc_recv_size_and_msg(cli_handler->ipc);
+	if (size < 0) {
+		strcpy(cli_handler->ipc->send_buf, "Problem with command");
+		ipc_send_size_and_msg(cli_handler->ipc);
+		return (-1);
+	}
+	status = sniffer_try_set_interface(cli_handler->sniffer, cli_handler->ipc->recv_buf, errbuf);
+	if (status < 0) {
+		strcpy(cli_handler->ipc->send_buf, errbuf);
+		ipc_send_size_and_msg(cli_handler->ipc);
+		return (-1);
+	}
+	else {
+		strcpy(cli_handler->ipc->send_buf, "Interface selected");
+		ipc_send_size_and_msg(cli_handler->ipc);
+		return (0);
+	}
 }
 
 int	_handle_stat_iface(t_cli_handler *cli_handler)
