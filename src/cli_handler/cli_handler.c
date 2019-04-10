@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include "cli_handler.h"
 #include "ipc.h"
 #include "sniffer.h"
@@ -198,7 +199,7 @@ int	_handle_show_ip_count(t_cli_handler *cli_handler)
 		return (-1);
 	}
 
-	nstat_lookup_ip_times(cli_handler->sniffer->nstat, 
+	nstat_lookup_ip_times(cli_handler->sniffer->nstats[cli_handler->sniffer->interface_idx], 
 		cli_handler->ipc->recv_buf, times);
 	
 	sprintf(cli_handler->ipc->send_buf, "%u", times[0]);
@@ -235,6 +236,41 @@ int	_handle_select_iface(t_cli_handler *cli_handler)
 
 int	_handle_stat_iface(t_cli_handler *cli_handler)
 {
-	(void)cli_handler;
+	int		size;
+	char	*ret;
+	char	**all_stat;
+
+
+	size = ipc_recv_size_and_msg(cli_handler->ipc);
+	if (size < 0) {
+		strcpy(cli_handler->ipc->send_buf, "Problem with getting iface");
+		ipc_send_size_and_msg(cli_handler->ipc);
+		return (-1);
+	}
+	ret = sniffer_get_interface_stat(cli_handler->sniffer, cli_handler->ipc->recv_buf);
+	if (ret != NULL) {
+		strcpy(cli_handler->ipc->send_buf, "1");
+		ipc_send_size_and_msg(cli_handler->ipc);
+
+		strcpy(cli_handler->ipc->send_buf, ret);
+		ipc_send_size_and_msg(cli_handler->ipc);
+		free(ret);
+		return (0);
+	}
+	all_stat = sniffer_get_all_stat(cli_handler->sniffer);
+	if (all_stat == NULL) {
+		strcpy(cli_handler->ipc->send_buf, "Problem with getting statistic");
+		ipc_send_size_and_msg(cli_handler->ipc);
+		return (-1);
+	}
+	sprintf(cli_handler->ipc->send_buf, "%d", cli_handler->sniffer->num_active_interfaces);
+	ipc_send_size_and_msg(cli_handler->ipc);
+	for (int i = 0; i < cli_handler->sniffer->num_active_interfaces; ++i)
+	{
+		printf("LLLLLLLLL: %s\n", all_stat[i]);
+		strcpy(cli_handler->ipc->send_buf, all_stat[i]);
+		ipc_send_size_and_msg(cli_handler->ipc);
+		free(all_stat[i]);
+	}
 	return (0);
 }

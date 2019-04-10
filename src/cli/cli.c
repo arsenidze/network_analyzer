@@ -236,7 +236,6 @@ int	cli_select_iface(int argc, char *argv[])
 		return (-1);
 	}
 	strcpy(ipc.send_buf, "select_iface");
-	printf("%s\n", ipc.send_buf);
 	status = ipc_send_size_and_msg(&ipc);
 	if (status < 0) {
 		fprintf(stderr, "Problem with command\n");
@@ -260,31 +259,43 @@ int	cli_select_iface(int argc, char *argv[])
 
 int	cli_stat_iface(int argc, char *argv[])
 {
-	(void)argc;
-	(void)argv;
-	return (0);
-	// t_ipc	ipc;
-	// int		status;
-	// int		size;
+	t_ipc	ipc;
+	int		status;
+	int		size;
+	int		num_active_interfaces;
 
-	// ipc_client_init(&ipc);
-	// strcpy(ipc.send_buf, "select_iface");
-	// status = ipc_send(&ipc);
-	// if (status < 0) {
-	// 	fprintf(stderr, "Problem with command\n");
-	// 	return (-1);
-	// }
-	// strcpy(ipc.send_buf, argv[3]);
-	// status = ipc_send(&ipc);
-	// if (status < 0) {
-	// 	fprintf(stderr, "Problem with command\n");
-	// 	return (-1);
-	// }
-	// size = ipc_recv(&ipc);
-	// if (size < 0) {
-	// 	fprintf(stderr, "Problem with command\n");
-	// 	return (-1);
-	// }
-	// printf("%s\n", ipc->recv_buf);
-	// ipc_free(&ipc);
+	(void)argc;
+	status = ipc_client_init(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+	strcpy(ipc.send_buf, "stat_iface");
+	status = ipc_send_size_and_msg(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+	strcpy(ipc.send_buf, argv[2]);
+	status = ipc_send_size_and_msg(&ipc);
+	if (status < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+	size = ipc_recv_size_and_msg(&ipc);
+	if (size < 0) {
+		fprintf(stderr, "Problem with command\n");
+		return (-1);
+	}
+	num_active_interfaces = atoi(ipc.recv_buf);
+	for (int i = 0; i < num_active_interfaces; ++i)
+	{
+		size = ipc_recv_size_and_msg(&ipc);
+		if (size < 0) {
+			continue ;
+		}
+		printf("%s\n", ipc.recv_buf);
+	}
+	ipc_free(&ipc);
+	return (0);
 }

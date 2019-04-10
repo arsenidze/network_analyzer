@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
+#include <syslog.h>
 
 int cmp_ip_fn(const struct avltree_node *a, const struct avltree_node *b)
 {
@@ -15,19 +17,18 @@ int cmp_ip_fn(const struct avltree_node *a, const struct avltree_node *b)
 
 int	nstat_init(t_nstat **nstat_ptr, char *file_name)
 {
-	int	status;
-
 	*nstat_ptr = malloc(sizeof(t_nstat));
 	if (*nstat_ptr == NULL) {
 		return (-1);
 	}
 	avltree_init(&(*nstat_ptr)->ip_storage, cmp_ip_fn, 0);
 	(*nstat_ptr)->num_ips = 0;
-	status = 0;
+	(*nstat_ptr)->num_packets = 0;
 	if (file_name != NULL) {
-		status = nstat_load_stat_from_file(*nstat_ptr, file_name);
+		strcpy((*nstat_ptr)->file_name, file_name);
+		nstat_load_stat_from_file(*nstat_ptr, file_name);
 	}
-	return (status);
+	return (0);
 }
 
 int	nstat_add_ip(t_nstat *nstat, char *ip_addr, t_ip_add_type type)
@@ -115,11 +116,13 @@ int	nstat_save_stat_to_file(t_nstat *nstat, char *file_name)
 	int				file_size;
 	t_storage_node	*storage_node;
 
+	file_name = (file_name != NULL) ? file_name : nstat->file_name;
 	fp = fopen(file_name, "w+b");
 	if (fp == NULL) {
 		return (-1);
 	}
-	file_size = MAX_BYTES_FOR_UINT + 1; //For number of ip packets + \n
+	file_size = MAX_BYTES_FOR_UINT + 1; //For number of packets + \n
+	file_size += MAX_BYTES_FOR_UINT + 1; //For number of ips + \n
 	file_size += nstat->num_ips * (MAX_NUM_CHARS_FOR_IP_RECORD + 1); //For all ip records with \n
 	stat_in_str = malloc(sizeof(char) * (file_size + 1));
 	if (stat_in_str == NULL) {
@@ -129,9 +132,15 @@ int	nstat_save_stat_to_file(t_nstat *nstat, char *file_name)
 	stat_in_str[file_size] = '\0';
 
 	//Add number of packets
-	sprintf(buf, "%u", nstat->num_ips);
+	sprintf(buf, "%u", nstat->num_packets);
 	_copy_and_fill_reminder(stat_in_str, buf, ' ', MAX_BYTES_FOR_UINT);
 	offset = MAX_BYTES_FOR_UINT;
+	stat_in_str[offset++] = '\n';
+
+	//Add number of ips
+	sprintf(buf, "%u", nstat->num_ips);
+	_copy_and_fill_reminder(stat_in_str + offset, buf, ' ', MAX_BYTES_FOR_UINT);
+	offset += MAX_BYTES_FOR_UINT;
 	stat_in_str[offset++] = '\n';
 	
 	for (struct avltree_node *next = avltree_first(&nstat->ip_storage); next != NULL; next = avltree_next(next)) {
@@ -174,11 +183,14 @@ int	nstat_load_stat_from_file(t_nstat *nstat, char *file_name)
 	int				stat_size;
 	t_storage_node	*storage_nodes;
 
+	file_name = (file_name != NULL) ? file_name : nstat->file_name;
 	fp = fopen(file_name, "r+b");
 	if (fp == NULL) {
+		syslog(LOG_ERR, "%s", strerror(errno));
 		return (-1);
 	}
 
+	fscanf(fp, "%u\n", &nstat->num_packets);
 	fscanf(fp, "%u\n", &nstat->num_ips);
 
 	stat_size = nstat->num_ips * (MAX_NUM_CHARS_FOR_IP_RECORD + 1);
@@ -215,6 +227,12 @@ int	nstat_load_stat_from_file(t_nstat *nstat, char *file_name)
 
 int	nstat_free(t_nstat *nstat) 
 {
+	t_storage_node	*storage_node;
+
+	for (struct avltree_node *next = avltree_first(&nstat->ip_storage); next != NULL; next = avltree_next(next)) {
+		storage_node = avltree_container_of(next, t_storage_node, node);
+		free(storage_node);
+	}
 	free(nstat);
 	return (0);
 }
@@ -249,4 +267,32 @@ int		nstat_lookup_ip_times(t_nstat *nstat, char *ip_addr, unsigned int times[2])
 		times[1] = find_storage_node->upcoming_times;
 		return (1);
 	}
+}
+
+char	*nstat_get_interface_stat_file_name(char *interface)
+{
+	static char	buf[MAX_STAT_FILE_NAME];
+    int     	len;
+
+    strcpy(buf, STAT_FILE_NAME_TEMPLATE);
+    buf[sizeof(STAT_FILE_NAME_TEMPLATE) - 1] = '_';
+    strcpy(buf + sizeof(STAT_FILE_NAME_TEMPLATE), interface);
+    len = strlen(buf);
+    strcpy(buf + len, STAT_FILE_EXTENSION);
+    return (buf);
+}
+
+void	nstat_increase_num_of_packets(t_nstat *nstat, unsigned int n)
+{
+	nstat->num_packets += n;
+}
+
+unsigned int	nstat_get_num_of_packets(t_nstat *nstat)
+{
+	return (nstat->num_packets);
+}
+
+unsigned int	nstat_get_num_of_ips(t_nstat *nstat)
+{
+	return (nstat->num_ips);
 }

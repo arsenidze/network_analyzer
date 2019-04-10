@@ -21,7 +21,6 @@ int cli_handler_free(t_cli_handler *cli_handler);
 int	_handle_start(t_cli_handler *cli_handler);
 int	_handle_stop(t_cli_handler *cli_handler);
 int	_handle_show_ip_count(t_cli_handler *cli_handler);
-int	_handle_show_ifaces(t_cli_handler *cli_handler);
 int	_handle_select_iface(t_cli_handler *cli_handler);
 int	_handle_stat_iface(t_cli_handler *cli_handler);
 

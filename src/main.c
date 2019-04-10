@@ -17,9 +17,13 @@ int		main(int argc, char *argv[])
 	openlog(argv[0], LOG_CONS, LOG_USER);
     syslog(LOG_INFO, "%s start", argv[0]);
 
-	// daemon_start();
-	sniffer_init(&sniffer);
-    cli_handler_init(&cli_handler, &sniffer);
+	daemon_start();
+	if (sniffer_init(&sniffer) < 0) {
+		return (-1);
+	}
+    if (cli_handler_init(&cli_handler, &sniffer) < 0) {
+    	return (-1);
+    }
 
     cli_handler_start(&cli_handler);
 

@@ -14,7 +14,7 @@ int	main(int argc, char *argv[])
 		printf("Error\n");
 	}
 	else {
-		printf("Command succesfully executed\n");
+		printf("\nCommand succesfully executed\n");
 	}
 
 	return (0);

@@ -5,6 +5,8 @@
 
 #define IP_LEN 15
 
+#define MAX_STAT_FILE_NAME	64
+
 typedef struct	s_storage_node
 {
 	char				ip_addr[IP_LEN + 1];
@@ -17,6 +19,8 @@ typedef struct	s_nstat
 {
 	struct avltree		ip_storage;
 	unsigned int		num_ips;
+	unsigned int		num_packets;
+	char				file_name[MAX_STAT_FILE_NAME];
 }				t_nstat;
 
 #endif
