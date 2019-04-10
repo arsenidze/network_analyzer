@@ -25,7 +25,7 @@ INC_DIRS =\
 
 INC = $(foreach inc_dir, $(INC_DIRS), $(addsuffix /*.h, $(wildcard $(inc_dir))))
 
-CFLAGS = -g -Wshadow
+CFLAGS = -g -Wall -Wextra -Werror
 IFLAGS = $(foreach inc_dir, $(INC_DIRS), $(addprefix -I, $(wildcard $(inc_dir))))
 LFLAGS = -lpcap -pthread
 

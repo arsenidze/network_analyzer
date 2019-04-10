@@ -88,7 +88,6 @@ void	_storage_node_to_str(t_storage_node *storage_node, char *str)
 {
 	int		offset;
 	char	buf[MAX_BYTES_FOR_UINT + 1];
-	int		len;
 
 	//Add ip address
 	_copy_and_fill_reminder(str, storage_node->ip_addr, ' ', IP_LEN);
@@ -203,7 +202,7 @@ int	nstat_load_stat_from_file(t_nstat *nstat, char *file_name)
 	memset(storage_nodes, 0, sizeof(t_storage_node) * nstat->num_ips);
 
 	offset = 0;
-	for (int i = 0; i < nstat->num_ips; i++) {
+	for (unsigned int i = 0; i < nstat->num_ips; i++) {
 		_str_to_storage_node(&stat_in_str[offset], &storage_nodes[i]);
 		offset += MAX_NUM_CHARS_FOR_IP_RECORD;
 		avltree_insert(&storage_nodes[i].node, &nstat->ip_storage);

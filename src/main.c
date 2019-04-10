@@ -13,6 +13,7 @@ int		main(int argc, char *argv[])
 	t_sniffer		sniffer;
 	t_cli_handler	cli_handler;
 
+	(void)argc;
 	openlog(argv[0], LOG_CONS, LOG_USER);
     syslog(LOG_INFO, "%s start", argv[0]);
 

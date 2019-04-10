@@ -235,5 +235,6 @@ int	_handle_select_iface(t_cli_handler *cli_handler)
 
 int	_handle_stat_iface(t_cli_handler *cli_handler)
 {
+	(void)cli_handler;
 	return (0);
 }

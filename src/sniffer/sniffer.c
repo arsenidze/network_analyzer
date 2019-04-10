@@ -117,19 +117,18 @@ void    sniffer_free(t_sniffer *sniffer)
 void    _packet_handler(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
 {
     static int                  count = 0;
-    const struct sniff_ethernet *ethernet;
     const struct sniff_ip       *ip;
     int                         size_ip;
     t_sniffer                   *sniffer;
     char                        *ip_addr;
     int                         status;
 
+    (void)header;
+    
     sniffer = (t_sniffer *)args;
 
     count++;
     syslog(LOG_INFO, "Packet number %d:\n", count);
-    
-    ethernet = (struct sniff_ethernet *)(packet);
     
     ip = (struct sniff_ip *)(packet + SIZE_ETHERNET);
     size_ip = IP_HL(ip)*4;

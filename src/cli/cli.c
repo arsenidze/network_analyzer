@@ -63,9 +63,7 @@ static int	_find_command_prototype(int argc, char *argv[])
 			return (i);
 		}
 	}
-	if (i == NCOMMANDS) {
-		return (-1);
-	}
+	return (-1);
 }
 
 static int	_execute_command(int argc, char *argv[], int command_idx)
@@ -100,6 +98,8 @@ int	cli_start(int argc, char *argv[])
 	int		status;
 	int		size;
 
+	(void)argc;
+	(void)argv;
 	status = ipc_client_init(&ipc);
 	if (status < 0) {
 		fprintf(stderr, "Problem with command\n");
@@ -127,6 +127,8 @@ int	cli_stop(int argc, char *argv[])
 	int		status;
 	int		size;
 
+	(void)argc;
+	(void)argv;
 	status = ipc_client_init(&ipc);
 	if (status < 0) {
 		fprintf(stderr, "Problem with command\n");
@@ -188,6 +190,7 @@ int	cli_show_ip_count(int argc, char *argv[])
 	int				status;
 	int				size;
 
+	(void)argc;
 	status = _check_ip_prototype(argv[2]);
 	if (status < 0) {
 		fprintf(stderr, "Error: Wrong ip format\n");
@@ -227,7 +230,6 @@ int	cli_select_iface(int argc, char *argv[])
 	int		size;
 
 	(void)argc;
-	(void)argv;
 	status = ipc_client_init(&ipc);
 	if (status < 0) {
 		fprintf(stderr, "Problem with command\n");
@@ -258,6 +260,9 @@ int	cli_select_iface(int argc, char *argv[])
 
 int	cli_stat_iface(int argc, char *argv[])
 {
+	(void)argc;
+	(void)argv;
+	return (0);
 	// t_ipc	ipc;
 	// int		status;
 	// int		size;
@@ -282,5 +287,4 @@ int	cli_stat_iface(int argc, char *argv[])
 	// }
 	// printf("%s\n", ipc->recv_buf);
 	// ipc_free(&ipc);
-	return (0);	
 }
